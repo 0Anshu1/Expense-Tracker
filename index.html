@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Expense Tracker</title>
+        <style>
+            body {
+                font-family: Arial, Helvetica, sans-serif;
+                background: linear-gradient(135deg, #89f7fe 0%, #66a6ff 100%);
+            }
+            .container {
+                max-width: 600px;
+                margin: 0 auto;
+                padding: 20px;
+                background-color: black;
+                border-radius: 15px;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+                color: white;
+            }
+            input[type="text"], input[type="date"], select, input[type="number"], input[type="submit"] {
+                margin-bottom: 10px;
+                width: 100%;
+                padding: 8px;
+                border: 1px solid #ccc;
+                border-radius: 5px;
+                box-sizing: border-box;
+            }
+            input[type="submit"] {
+                background-color: #4caf5d;
+                color: white;
+                border: none;
+                cursor: pointer;
+            }
+            input[type="submit"]:hover {
+                background-color: black;
+            }
+            table {
+                width: 100%;
+                border-collapse: collapse;
+            }
+            th, td {
+                border: 1px solid #ddd;
+                padding: 8px;
+                text-align: left;
+                background-color: #4caf50;
+                color: white;
+            }
+            .button-container {
+                display: flex;
+                justify-content: space-between;
+                margin-top: 15px;
+            }
+            .button-container button {
+                padding: 10px;
+                font-size: 16px;
+                cursor: pointer;
+                border: none;
+                border-radius: 5px;
+            }
+            #saveButton {
+                background-color: #4caf5d;
+                color: white;
+            }
+            #resetButton {
+                background-color: #ff6347;
+                color: white;
+            }
+        </style>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    </head>
+    <body>
+        <div class="container">
+            <h2>Expense Tracker</h2>
+            <form id="expenseform">
+                <input type="date" id="date" required /><br>
+                <input type="text" id="desc" placeholder="Expense Description" required /><br>
+                <select id="category" required>
+                    <option value="">Select Category</option>
+                    <option value="Food Expense">Food</option>
+                    <option value="Transportation">Transportation</option>
+                    <option value="Shopping">Shopping</option>
+                    <option value="Utilities">Utilities</option>
+                    <option value="Entertainment">Entertainment</option>
+                    <option value="Other">Other</option>
+                </select><br>
+                <input type="number" id="amount" placeholder="Amount" required><br>
+                <input type="submit" value="Add Expense">
+            </form>
+            <h3>Expense Summary</h3>
+            <table id="expensetable">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Description</th>
+                        <th>Category</th>
+                        <th>Amount</th>
+                    </tr>
+                </thead>
+                <tbody id="expenselist">
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan="3"><strong>Total</strong></td>
+                        <td id="totalAmount">0</td>
+                    </tr>
+                </tfoot>
+            </table>
+            <div class="button-container">
+                <button id="saveButton">Save</button>
+                <button id="resetButton">+</button>
+            </div>
+        </div>
+        <script>
+            const expenseform = document.getElementById('expenseform');
+            const expenselist = document.getElementById('expenselist');
+            const saveButton = document.getElementById('saveButton');
+            const resetButton = document.getElementById('resetButton');
+            const totalAmount = document.getElementById('totalAmount');
+            let totalExpenses = 0;
+
+            // Event listener for form submission
+            expenseform.addEventListener('submit', function(event) {
+                event.preventDefault();
+
+                const date = document.getElementById('date').value;
+                const description = document.getElementById('desc').value;
+                const category = document.getElementById('category').value;
+                const amount = parseFloat(document.getElementById('amount').value);
+
+                if (date && description && category && !isNaN(amount) && amount > 0) {
+                    const newRow = document.createElement('tr');
+                    newRow.innerHTML = `
+                        <td>${date}</td>
+                        <td>${description}</td>
+                        <td>${category}</td>
+                        <td>${amount.toFixed(2)}</td>
+                    `;
+                    expenselist.appendChild(newRow);
+
+                    // Update the total amount
+                    totalExpenses += amount;
+                    totalAmount.textContent = totalExpenses.toFixed(2);
+
+                    // Clear the input fields
+                    document.getElementById('date').value = "";
+                    document.getElementById('desc').value = "";
+                    document.getElementById('category').value = "";
+                    document.getElementById('amount').value = "";
+                } else {
+                    alert('Please fill all the fields with valid data!');
+                }
+            });
+
+            // Event listener for the save button
+            saveButton.addEventListener('click', function() {
+                const tableData = [];
+                const rows = expenselist.querySelectorAll('tr');
+
+                rows.forEach(row => {
+                    const rowData = Array.from(row.querySelectorAll('td')).map(cell => cell.textContent);
+                    tableData.push(rowData);
+                });
+
+                // Add the total row at the end of the table data
+                tableData.push(['', '', 'Total', totalExpenses.toFixed(2)]);
+
+                const worksheet = XLSX.utils.aoa_to_sheet([['Date', 'Description', 'Category', 'Amount'], ...tableData]);
+                const workbook = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(workbook, worksheet, 'Expenses');
+                XLSX.writeFile(workbook, 'Expense_Tracker.xlsx');
+            });
+
+            // Event listener for the reset button
+            resetButton.addEventListener('click', function() {
+                expenselist.innerHTML = "";  // Clear the table body for fresh entries
+                totalExpenses = 0;  // Reset the total expenses
+                totalAmount.textContent = totalExpenses.toFixed(2);  // Update the total display
+            });
+        </script>
+    </body>
+</html>
